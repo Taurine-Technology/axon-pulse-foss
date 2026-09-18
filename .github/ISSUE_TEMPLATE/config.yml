@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/Taurine-Technology/axon-pulse-foss/security/policy
+    about: Never file a vulnerability as an issue. Follow SECURITY.md (a private advisory, or email info@taurinetech.com).

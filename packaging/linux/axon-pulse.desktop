@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Axon Pulse
+Comment=Private network quality monitoring
+Exec=axon-pulse-desktop %u
+Icon=axon-pulse
+Terminal=false
+Categories=Network;Monitor;
+MimeType=x-scheme-handler/axon-pulse;
+StartupNotify=true

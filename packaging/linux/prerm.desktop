@@ -1,0 +1,6 @@
+#!/bin/sh
+set -e
+
+if { [ "${1:-}" = remove ] || [ "${1:-}" = deconfigure ]; } && command -v apparmor_parser >/dev/null 2>&1; then
+  apparmor_parser --remove /etc/apparmor.d/axon-pulse-desktop 2>/dev/null || true
+fi

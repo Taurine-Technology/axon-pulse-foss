@@ -1,0 +1,167 @@
+#!/bin/sh
+# Download over HTTPS, then run with bash/sh. Desktop pairing uses the browser;
+# headless pairing accepts an invite on stdin (or --token for older commands).
+main() {
+  set -eu
+  set +x
+  umask 077
+  channel=main
+  explicit_channel=false
+  package=axon-pulse-desktop
+  auto_updates=false
+  base='https://dist.taurinetech.com/pulse/apt'
+  controller=''
+  token=''
+  token_source=''
+  download_base=''
+  apt_base=''
+  fingerprint='@FINGERPRINT@'
+  fail() { printf 'Axon Pulse: %s\n' "$*" >&2; exit 1; }
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --channel|--package|--url|--token|--apt-base-url|--download-base-url)
+        [ "$#" -ge 2 ] && [ -n "$2" ] || fail "Missing value for $1"
+        case "$1:$2" in
+          --channel:main|--channel:beta|--channel:alpha) channel=$2; explicit_channel=true ;;
+          --package:desktop) package=axon-pulse-desktop ;;
+          --package:headless) package=axon-pulse ;;
+          --url:*) controller=${2%/} ;;
+          --apt-base-url:*) apt_base=${2%/} ;;
+          --download-base-url:*) download_base=${2%/} ;;
+          --token:*)
+            [ -z "$token_source" ] || fail 'Specify exactly one invite source'
+            token=$2; token_source=argument ;;
+          *) fail "Invalid $1 value" ;;
+        esac
+        shift 2 ;;
+      --token-stdin)
+        [ -z "$token_source" ] || fail 'Specify exactly one invite source'
+        token_source=stdin; shift ;;
+      --enable-auto-updates) auto_updates=true; shift ;;
+      --help|-h)
+        echo 'Usage: sh install-apt.sh [--channel main|beta|alpha] [--package desktop|headless] [--enable-auto-updates] [--apt-base-url https://dist.example/pulse/apt] [--url https://controller.example --token-stdin]'
+        return ;;
+      *) fail 'Unknown installer argument' ;;
+    esac
+  done
+  if [ -n "$download_base" ]; then
+    [ -z "$apt_base" ] || fail 'Specify only one download base option'
+    case "$download_base" in
+      */main|*/beta|*/alpha)
+        apt_base="${download_base%/*}/apt"
+        [ "$explicit_channel" = true ] || channel=${download_base##*/} ;;
+      *) fail 'Legacy download base must end in main, beta, or alpha' ;;
+    esac
+  fi
+  [ -z "$apt_base" ] || base=$apt_base
+  case "$base" in https://?*) ;; *) fail 'APT base must use HTTPS' ;; esac
+  case "$base" in *[!a-zA-Z0-9./:_-]*) fail 'APT base contains unsupported characters' ;; esac
+  if [ -n "$controller" ] || [ -n "$token_source" ]; then
+    [ "$package" = axon-pulse ] || fail 'Desktop pairing uses the Connect Pulse browser link'
+    case "$controller" in https://?*) ;; *) fail 'Controller URL must use HTTPS' ;; esac
+    [ -n "$token_source" ] || fail 'An invitation is required for headless pairing'
+    if [ "$token_source" = stdin ]; then
+      IFS= read -r token || [ -n "$token" ] || fail 'Could not read invitation from stdin'
+    fi
+    case "$token" in spt_?*) ;; *) fail 'Invalid sensor invitation' ;; esac
+    case "$token" in *[!a-zA-Z0-9_-]*) fail 'Invalid sensor invitation' ;; esac
+  fi
+  if [ "$auto_updates" = true ] && [ "$channel" != main ]; then
+    echo 'Unattended updates are only offered for the main stream.' >&2
+    return 1
+  fi
+  for tool in apt-get dpkg curl gpg; do
+    command -v "$tool" >/dev/null || { echo "Install $tool first." >&2; return 1; }
+  done
+  arch=$(dpkg --print-architecture)
+  case "$arch" in amd64|arm64) ;; *) echo 'Pulse requires amd64 or arm64.' >&2; return 1 ;; esac
+  as_root() { if [ "$(id -u)" = 0 ]; then "$@"; else sudo "$@"; fi; }
+  if [ "$package" = axon-pulse ]; then
+    for tool in systemctl timeout; do
+      command -v "$tool" >/dev/null || fail "Install $tool first"
+    done
+    [ -d /run/systemd/system ] || fail 'Headless Pulse requires a running systemd'
+  fi
+  work=$(mktemp -d)
+  trap 'rm -rf -- "$work"' 0
+  trap 'exit 1' HUP INT TERM
+  mkdir -m 0700 "$work/gnupg"
+  curl --proto '=https' --proto-redir '=https' --fail --silent --show-error --location \
+    --connect-timeout 15 --max-time 60 --output "$work/key.gpg" "$base/axon-pulse-archive-keyring.gpg"
+  actual=$(gpg --homedir "$work/gnupg" --batch --show-keys --with-colons "$work/key.gpg" | awk -F: '$1 == "pub" { primary=1; next } $1 == "fpr" && primary { print $10; primary=0 }')
+  [ "$actual" = "$fingerprint" ] || { echo 'APT signing key fingerprint mismatch; nothing installed.' >&2; return 1; }
+  cat > "$work/axon-pulse.sources" <<EOF
+Types: deb
+URIs: $base
+Suites: $channel
+Components: main
+Architectures: $arch
+Signed-By: /etc/apt/keyrings/axon-pulse-archive-keyring.gpg
+EOF
+  # Scope this repository to Pulse even if unrelated packages are published.
+  cat > "$work/axon-pulse.pref" <<EOF
+Package: axon-pulse axon-pulse-desktop
+Pin: release o=Taurine Technology,l=Axon Pulse
+Pin-Priority: 500
+
+Package: *
+Pin: release o=Taurine Technology,l=Axon Pulse
+Pin-Priority: -1
+EOF
+  as_root install -d -m 0755 /etc/apt/keyrings
+  as_root install -m 0644 "$work/key.gpg" /etc/apt/keyrings/axon-pulse-archive-keyring.gpg
+  as_root install -m 0644 "$work/axon-pulse.sources" /etc/apt/sources.list.d/axon-pulse.sources
+  as_root install -m 0644 "$work/axon-pulse.pref" /etc/apt/preferences.d/axon-pulse
+  as_root apt-get update --error-on=any
+  # --yes also keeps APT from reading the invite pipe after --token-stdin.
+  as_root apt-get install --yes "$package"
+  if [ "$package" = axon-pulse ]; then
+    # Also reload/restart an older manually installed unit that may shadow the
+    # packaged unit. A health check below verifies the service now uses APT.
+    as_root systemctl daemon-reload
+    as_root systemctl enable axon-pulse.service
+    as_root systemctl restart axon-pulse.service
+    ready=false
+    for attempt in 1 2 3 4 5 6 7 8 9 10; do
+      if as_root env -u AXON_PULSE_SOCKET -u AXON_PULSE_STATE_DIR timeout 3 \
+        /usr/bin/axon-pulse status --state-dir /var/lib/axon-pulse > "$work/status" 2>/dev/null; then
+        ready=true
+        break
+      fi
+      sleep 1
+    done
+    [ "$ready" = true ] || fail 'Service did not become ready. Check sudo journalctl -u axon-pulse --no-pager -n 50'
+    grep -Eq '"update_method"[[:space:]]*:[[:space:]]*"apt"' "$work/status" || \
+      fail 'The running service is not APT-managed; inspect its systemd unit before pairing'
+    if [ -n "$token_source" ]; then
+      if grep -Eq '"connected"[[:space:]]*:[[:space:]]*true' "$work/status"; then
+        fail 'This sensor is already paired. Existing credentials were preserved and the new invite was not used'
+      fi
+      grep -Eq '"connected"[[:space:]]*:[[:space:]]*false' "$work/status" || \
+        fail 'Could not verify pairing state; the invitation was not used'
+      if ! printf '%s\n' "$token" | as_root env -u AXON_PULSE_SOCKET -u AXON_PULSE_STATE_DIR \
+        /usr/bin/axon-pulse connect --url "$controller" --token-stdin --state-dir /var/lib/axon-pulse; then
+        fail 'Pulse is installed, but enrollment failed. Check the controller and invitation, then retry'
+      fi
+      unset token
+      echo 'Pulse is installed and connected. Refresh Network > Sensors in Axon.'
+    fi
+  fi
+  if [ "$auto_updates" = true ]; then
+    as_root apt-get install --yes unattended-upgrades
+    cat > "$work/52unattended-upgrades-axon-pulse" <<'EOF'
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+Unattended-Upgrade::Origins-Pattern {
+  "origin=Taurine Technology,label=Axon Pulse,codename=main";
+};
+EOF
+    as_root install -m 0644 "$work/52unattended-upgrades-axon-pulse" /etc/apt/apt.conf.d/52unattended-upgrades-axon-pulse
+  fi
+  echo 'Pulse is installed. Future updates are managed by APT.'
+  if [ "$package" = axon-pulse-desktop ]; then
+    echo 'If Pulse was already running, its background service restarts itself and a closed window relaunches; an open window offers Restart Pulse.'
+    echo 'Open Axon Pulse from Applications, then return to your invitation and select Connect Pulse.'
+  fi
+}
+main "$@"

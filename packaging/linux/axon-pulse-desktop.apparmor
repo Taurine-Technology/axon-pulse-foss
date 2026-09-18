@@ -1,0 +1,13 @@
+# This profile allows normal desktop access and only gives the executable an
+# AppArmor label so Ubuntu can grant the user namespace used by WebKitGTK's
+# bubblewrap sandbox. It is a compatibility profile, not a confinement boundary.
+
+abi <abi/4.0>,
+
+include <tunables/global>
+
+/usr/lib/axon-pulse/axon-pulse-desktop flags=(unconfined) {
+  userns,
+
+  include if exists <local/axon-pulse-desktop>
+}

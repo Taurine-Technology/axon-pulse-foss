@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+if [ "${1:-configure}" = "configure" ] && [ -d /run/systemd/system ]; then
+  systemctl daemon-reload || true
+  if [ -n "${2:-}" ]; then
+    # Upgrades replace the running executable too; preserve disabled services.
+    systemctl try-restart axon-pulse.service || true
+  else
+    systemctl enable --now axon-pulse.service || true
+  fi
+fi

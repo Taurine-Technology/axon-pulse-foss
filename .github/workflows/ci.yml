@@ -1,0 +1,218 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "17 4 * * 1"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# No job in this workflow receives repository or organization secrets. The
+# shared Axon packages are carried in third_party/axon-contracts, so a pull
+# request from a fork runs the same compile, test, lint, tidy, and
+# vulnerability checks as a push to main.
+permissions:
+  contents: read
+
+jobs:
+  workflow-policy:
+    name: immutable workflow policy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Require immutable action references
+        shell: bash
+        run: |
+          if grep -rP 'uses:\s+\S+@(?![0-9a-f]{40}(?:\s|$))' .github/workflows; then
+            echo 'workflow actions must use full commit SHAs' >&2
+            exit 1
+          fi
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.26.7"
+          cache: false
+      - name: Lint workflow files
+        # External checkers are disabled so the result does not depend on
+        # which tools the runner image happens to ship.
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12 -shellcheck= -pyflakes=
+
+  pull-request-checks:
+    name: secret-free pull request checks
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.26.7"
+          cache: false
+      - name: Check generated text and source syntax
+        shell: bash
+        run: |
+          unformatted=$(git ls-files -z '*.go' | xargs -0 gofmt -l)
+          test -z "$unformatted"
+          node --check desktop/frontend/app.js
+          node --check desktop/frontend/household.mjs
+          node --check desktop/frontend/metrics.mjs
+          node --check desktop/frontend/updates.mjs
+          node --test desktop/frontend_test/*.test.mjs
+          git ls-files -z '*.sh' | xargs -0 -n1 sh -n
+          sh packaging/linux/build-packages_test.sh
+          python3 packaging/apt/test_repository.py
+          sh -n packaging/apt/install-apt.sh.in
+          python3 packaging/install_test.py
+          bash -n packaging/install.sh.in
+      - name: Check whitespace in the pull request diff
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: git diff --check "$BASE_SHA...$HEAD_SHA"
+
+  test:
+    name: test (${{ matrix.os }})
+    if: github.event_name != 'schedule'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-latest, windows-2025]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.26.7"
+          cache-dependency-path: |
+            go.sum
+            desktop/go.sum
+            third_party/axon-contracts/go.sum
+      - name: Install Linux webview headers
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libgtk-4-dev libwebkitgtk-6.0-dev
+      - run: go test -race ./...
+      - working-directory: desktop
+        run: go test -race ./...
+      - working-directory: third_party/axon-contracts
+        run: go test -race ./...
+
+  headless:
+    name: six-target headless size gate
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.26.7"
+          cache-dependency-path: |
+            go.sum
+            third_party/axon-contracts/go.sum
+      - run: make build-all
+
+  desktop:
+    name: desktop and JS size gate (${{ matrix.os }})
+    if: github.event_name != 'schedule'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-latest, windows-2025]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.26.7"
+          cache-dependency-path: |
+            go.sum
+            desktop/go.sum
+            third_party/axon-contracts/go.sum
+      - name: Install Linux webview headers
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libgtk-4-dev libwebkitgtk-6.0-dev
+      - name: Build desktop
+        working-directory: desktop
+        shell: bash
+        run: |
+          cgo=1
+          if [ "${{ runner.os }}" = "Windows" ]; then cgo=0; fi
+          CGO_ENABLED=$cgo go build -trimpath -ldflags='-s -w' -o ../axon-pulse-desktop${{ runner.os == 'Windows' && '.exe' || '' }} .
+      - name: Enforce installed and frontend budgets
+        shell: bash
+        run: |
+          bytes=$(wc -c < axon-pulse-desktop${{ runner.os == 'Windows' && '.exe' || '' }} | tr -d ' ')
+          jsbytes=$(wc -c desktop/frontend/*.js desktop/frontend/*.mjs | awk 'END { print $1 }')
+          test "$bytes" -le 26214400
+          test "$jsbytes" -le 204800
+
+  policy:
+    name: lint and license policy
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.26.7"
+          cache-dependency-path: |
+            go.sum
+            desktop/go.sum
+            third_party/axon-contracts/go.sum
+      - name: Install Linux webview headers
+        run: sudo apt-get update && sudo apt-get install -y libgtk-4-dev libwebkitgtk-6.0-dev
+      - name: Verify module manifests are canonical
+        shell: bash
+        run: |
+          go mod tidy -diff
+          go mod verify
+          (cd desktop && go mod tidy -diff && go mod verify)
+          (cd third_party/axon-contracts && go mod tidy -diff && go mod verify)
+      - run: make lint
+      - run: make licenses
+
+  vulnerability-scan:
+    name: reachable vulnerability scan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.26.7"
+          cache-dependency-path: |
+            go.sum
+            desktop/go.sum
+            third_party/axon-contracts/go.sum
+      - name: Install Linux webview headers
+        run: sudo apt-get update && sudo apt-get install -y libgtk-4-dev libwebkitgtk-6.0-dev
+      # Symbol-level scans report only vulnerabilities in code Pulse actually
+      # reaches. A module-level scan can never pass while golang.org/x/crypto
+      # is a dependency: GO-2026-5932 marks its openpgp package unfixable even
+      # though nothing here imports it.
+      - run: go run golang.org/x/vuln/cmd/govulncheck@v1.7.0 ./...
+      - working-directory: desktop
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.7.0 ./...

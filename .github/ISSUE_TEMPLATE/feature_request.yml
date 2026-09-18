@@ -1,0 +1,24 @@
+name: Feature request
+description: Propose a change or addition
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What can you not do today, or what is harder than it should be?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+    validations:
+      required: true
+  - type: textarea
+    id: resources
+    attributes:
+      label: Resource and privacy impact
+      description: Pulse runs on subscriber machines. How would this affect CPU, memory, disk, network, battery, or the privacy rules in docs/architecture.md?
+    validations:
+      required: false

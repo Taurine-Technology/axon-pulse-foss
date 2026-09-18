@@ -1,0 +1,4 @@
+# Every pull request needs a maintainer review. CONTRIBUTING.md lists the
+# areas (privacy, updater, IPC, protocol, packaging, workflows) that also need
+# a written threat-model or privacy-impact note in the pull request.
+* @keeganwhite

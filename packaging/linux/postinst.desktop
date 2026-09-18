@@ -1,0 +1,7 @@
+#!/bin/sh
+set -e
+if command -v apparmor_parser >/dev/null 2>&1; then
+  apparmor_parser --replace /etc/apparmor.d/axon-pulse-desktop 2>/dev/null || true
+fi
+update-desktop-database /usr/share/applications 2>/dev/null || true
+xdg-mime default axon-pulse.desktop x-scheme-handler/axon-pulse 2>/dev/null || true

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.taurine.axon-pulse.managed</string>
+  <key>ProgramArguments</key><array><string>/usr/local/bin/axon-pulse</string><string>run</string><string>--state-dir</string><string>/Library/Application Support/Axon Pulse</string><string>--socket</string><string>/Library/Application Support/Axon Pulse/pulsed.sock</string></array>
+  <key>RunAtLoad</key><true/><key>KeepAlive</key><true/>
+  <key>ProcessType</key><string>Background</string>
+  <key>StandardOutPath</key><string>/Library/Logs/AxonPulse.log</string>
+  <key>StandardErrorPath</key><string>/Library/Logs/AxonPulse.log</string>
+</dict></plist>

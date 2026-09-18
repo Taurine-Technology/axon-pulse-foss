@@ -1,0 +1,60 @@
+name: Bug report
+description: Something in Pulse behaves incorrectly
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not report security problems here; follow SECURITY.md instead.
+        Support bundles and logs are redacted by Pulse, but please check them
+        before pasting and remove anything you consider private.
+  - type: input
+    id: version
+    attributes:
+      label: Pulse version
+      description: Output of `axon-pulse version`, or Settings → About in the desktop app.
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: Platform and install method
+      options:
+        - Linux desktop (APT)
+        - Linux desktop (AppImage)
+        - Linux headless (APT)
+        - Linux headless (installer script or binary)
+        - macOS desktop
+        - Windows desktop
+        - Other (describe below)
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Mode
+      options:
+        - Local
+        - Connected
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: Include relevant lines from `axon-pulse logs` or the support bundle.
+    validations:
+      required: true

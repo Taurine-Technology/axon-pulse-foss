@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Axon Pulse</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script type="module" src="/wails/runtime.js"></script>
+    <script type="module" src="app.js"></script>
+  </head>
+  <body>
+    <aside>
+      <div class="brand" aria-label="Axon Pulse">
+        <span class="brand-mark" aria-hidden="true"><img src="logo-mark.svg" alt="" /></span>
+        <span>Axon <b>Pulse</b></span>
+      </div>
+      <nav aria-label="Main navigation">
+        <button class="nav active" data-screen="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><label data-i18n="home">Home</label></button>
+        <button class="nav nerd-only" data-screen="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg><label data-i18n="history">History</label></button>
+        <button class="nav" data-screen="speed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg><label data-i18n="speed">Speed test</label></button>
+        <button class="nav" data-screen="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg><label data-i18n="settings">Settings</label></button>
+      </nav>
+      <div class="service-state"><span id="state-dot" aria-hidden="true"></span><span id="state-label" role="status" aria-live="polite">Starting service…</span></div>
+    </aside>
+
+    <main>
+      <section id="screen-home" class="screen active" aria-labelledby="home-title">
+        <header><div><h1 id="home-title" data-i18n="your_connection">Your connection</h1><p class="subtitle" data-i18n="live">Live network health</p></div><span id="quality-pill" class="pill neutral">Waiting for data</span></header>
+        <div class="hero-card">
+          <div><span class="metric-label" data-i18n="latency">Latency</span><strong id="latency">—</strong><small>ms p50</small></div>
+          <div><span class="metric-label" data-i18n="jitter">Jitter</span><strong id="jitter">—</strong><small>ms</small></div>
+          <div><span class="metric-label" data-i18n="loss">Packet loss</span><strong id="loss">—</strong><small>%</small></div>
+        </div>
+        <div class="chart-card nerd-only"><div class="card-heading"><h2 data-i18n="last_minutes">Last few minutes</h2><span id="target-label">Internet</span></div><canvas id="latency-chart" role="img" aria-label="Recent network latency graph"></canvas></div>
+        <div class="split">
+          <article class="mini-card"><div class="icon wifi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h.01"/><path d="M2 8.82a15 15 0 0 1 20 0"/><path d="M5 12.859a10 10 0 0 1 14 0"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/></svg></div><div><span class="mini-label" data-i18n="local_network">Local network</span><strong id="local-health">Checking…</strong></div></article>
+          <article class="mini-card"><div class="icon cloud" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg></div><div><span class="mini-label" data-i18n="internet">Internet</span><strong id="internet-health">Checking…</strong></div></article>
+          <article class="mini-card"><div class="icon speed" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></svg></div><div><span class="mini-label" data-i18n="scheduled_test">Scheduled speed test</span><strong id="speed-schedule">Calculating…</strong><small id="last-speed"></small></div></article>
+        </div>
+        <section class="experience-section" aria-labelledby="experience-title">
+          <div class="card-heading"><div><h2 id="experience-title">What your connection is good for</h2><p id="experience-summary" class="subtitle">Run a content test for an experience check.</p></div><span id="experience-score" class="score-badge">—</span></div>
+          <div class="experience-grid">
+            <article class="experience-card" data-app="browsing"><span>Browsing</span><strong>Waiting</strong><small>Starting sites and requests</small></article>
+            <article class="experience-card" data-app="streaming"><span>Streaming</span><strong>Waiting</strong><small>Video without stalls</small></article>
+            <article class="experience-card" data-app="video_calls"><span>Video calls</span><strong>Waiting</strong><small>Clear two-way conversation</small></article>
+            <article class="experience-card" data-app="gaming"><span>Gaming</span><strong>Waiting</strong><small>Responsive controls under load</small></article>
+          </div>
+        </section>
+      </section>
+
+      <section id="screen-history" class="screen" aria-labelledby="history-title">
+        <header><div><h1 id="history-title" data-i18n="history">History</h1><p class="subtitle" data-i18n="recent">Recent measurements</p></div><select id="history-range" aria-label="History range"><option value="6">6 hours</option><option value="24" selected>24 hours</option><option value="168">7 days</option></select></header>
+        <div id="history-list" class="history-list"><div class="empty">No completed measurements yet.</div></div>
+      </section>
+
+      <section id="screen-speed" class="screen" aria-labelledby="speed-title">
+        <header><div><h1 id="speed-title" data-i18n="speed">Speed test</h1><p class="subtitle" data-i18n="on_demand">On-demand diagnostic</p></div><label class="profile-picker">Test type<select id="speed-profile" aria-label="Test type"></select></label></header>
+        <div class="speed-card">
+          <button id="speed-ring" class="speed-ring"><span id="speed-action" data-i18n="start">Start</span><small data-i18n="speed_test">speed test</small></button>
+          <p id="speed-note"><span id="speed-note-lead">Pulse will use up to </span><strong id="predicted-data">10 MB</strong><span id="speed-note-tail"> and measure latency while the link is busy.</span><span id="budget-warning" class="budget-warning"></span></p>
+          <div id="speed-live" class="speed-live hidden">
+            <div class="speed-live-head"><span id="speed-live-phase" class="phase-chip">Starting…</span><span class="speed-live-meta"><span id="speed-live-rtt">—</span> · <span id="speed-live-elapsed">0.0 s</span></span></div>
+            <canvas id="speed-live-chart" height="150" aria-label="Live throughput and latency during the running test" role="img"></canvas>
+            <div class="speed-live-legend"><span class="legend-down">Download</span><span class="legend-up">Upload</span><span class="legend-rtt">Latency</span></div>
+          </div>
+          <p id="speed-verdict" class="speed-verdict hidden"></p>
+          <p id="saturation-note" class="speed-verdict hidden">Saturation test: shows what happens when the line is driven to its limit, not typical use.</p>
+          <div id="household-result" class="household-result hidden"></div>
+          <div class="speed-results">
+            <div><span>↓ <label data-i18n="download">Download</label></span><strong id="speed-down">—</strong><small>Mbps</small></div>
+            <div><span>↑ <label data-i18n="upload">Upload</label></span><strong id="speed-up">—</strong><small>Mbps</small></div>
+            <div><span>◎ <label data-i18n="bufferbloat">Responsiveness</label></span><strong id="speed-grade">—</strong><small>grade</small></div>
+          </div>
+          <div id="speed-confidence" class="confidence neutral">Measurement confidence: waiting</div>
+        </div>
+        <div class="household-card">
+          <div class="card-heading"><div><h2>Household mix</h2><p class="subtitle">What the scheduled household test reproduces on your connection.</p></div><span id="household-mix-source" class="mono"></span></div>
+          <p id="household-unavailable" class="speed-verdict hidden">Your controller does not support household tests yet; the legacy everyday test runs instead.</p>
+          <form id="household-editor" class="household-editor">
+            <div id="household-fields" class="hh-fields"></div>
+            <p id="household-demand" class="hh-demand"></p>
+            <p id="household-error" class="form-error" role="alert"></p>
+            <div class="hh-actions"><button id="household-save" class="secondary" type="submit">Save</button><button id="household-reset" class="secondary" type="button">Use controller/default mix</button></div>
+          </form>
+        </div>
+        <div class="speed-history-card">
+          <div class="card-heading"><h2>Recent tests</h2><span id="speed-history-count"></span></div>
+          <div id="speed-history-list" class="speed-history-list"><div class="empty">No speed tests in the last 7 days.</div></div>
+          <div id="speed-history-pager" class="speed-history-pager hidden">
+            <button id="speed-history-prev" type="button">‹ Newer</button>
+            <span id="speed-history-page"></span>
+            <button id="speed-history-next" type="button">Older ›</button>
+          </div>
+        </div>
+        <div class="nerd-panel nerd-only">
+          <div class="card-heading"><h2>Measurement evidence</h2><span id="measurement-id" class="mono"></span></div>
+          <div class="path-grid"><div><span>Persistent path p95</span><strong id="persistent-p95">—</strong><small>ms</small></div><div><span>Fresh path p95</span><strong id="fresh-p95">—</strong><small>ms</small></div><div><span>Data used</span><strong id="test-data-used">—</strong><small>MB</small></div></div>
+          <div id="phase-list" class="phase-list"><div class="empty">Run a test to inspect phase windows and stability.</div></div>
+          <p id="confidence-reasons" class="technical-note"></p>
+        </div>
+      </section>
+
+      <section id="screen-settings" class="screen" aria-labelledby="settings-title">
+        <header><div><h1 id="settings-title" data-i18n="settings">Settings</h1><p class="subtitle" data-i18n="preferences">Preferences</p></div></header>
+        <div class="settings-card">
+          <div class="setting"><div><strong>Operating mode</strong><small>Local keeps every result on this device. Connected uploads only measurements made in connected mode.</small></div><div class="segmented"><button id="mode-local" class="secondary">Local</button><button id="mode-connected" class="secondary">Connected</button></div></div>
+          <div class="setting"><div><strong data-i18n="connection">Controller connection</strong><small id="controller-url">Not connected</small></div><span id="sensor-id" class="mono"></span></div>
+          <div class="setting"><div><strong data-i18n="data_budget">Daily speed-test budget</strong><small data-i18n="budget_help">Automatically stops data-heavy tests at the configured limit.</small></div><span id="budget">—</span></div>
+          <div class="setting"><div><strong>Monthly speed-test budget</strong><small>Longer-term local limit across scheduled and manual tests.</small></div><span id="monthly-budget">—</span></div>
+          <div class="setting"><div><strong data-i18n="measurement">Measurement</strong><small data-i18n="pause_help">Basic health checks use only a few kilobytes per minute.</small></div><button id="pause-button" class="secondary" data-i18n="pause">Pause 1 hour</button></div>
+          <div class="setting"><div><strong data-i18n="ssid_sharing">Share Wi-Fi network name</strong><small data-i18n="ssid_help">Off by default. Shared only when your provider requests it; local copies expire within seven days.</small></div><label class="switch"><input id="ssid-consent" type="checkbox" aria-label="Share Wi-Fi network name" /><span></span></label></div>
+          <div class="setting"><div><strong data-i18n="start_login">Start at login</strong><small data-i18n="start_login_help">Keep Pulse monitoring after you restart this computer.</small></div><label class="switch"><input id="autostart" type="checkbox" aria-label="Start Axon Pulse at login" /><span></span></label></div>
+          <div class="setting"><div><strong>Nerd mode</strong><small>Show raw history, graphs, phase stability, path latency, and confidence reasons.</small></div><label class="switch"><input id="nerd-mode" type="checkbox" aria-label="Enable nerd mode" /><span></span></label></div>
+          <div class="setting"><div><strong data-i18n="language">Language</strong><small>English</small></div><span>English</span></div>
+          <div id="update-stream-setting" class="setting"><div><strong data-i18n="update_stream">Update stream</strong><small id="update-stream-help" data-i18n="update_stream_help">Stable is recommended. Beta and Alpha receive new builds earlier and may be less polished.</small></div><select id="update-stream" aria-label="Update stream"><option value="main" data-i18n="stream_main">Stable</option><option value="beta" data-i18n="stream_beta">Beta</option><option value="alpha" data-i18n="stream_alpha">Alpha</option></select></div>
+          <div class="setting"><div><strong data-i18n="updates">Software updates</strong><small id="update-status" role="status" aria-live="polite" aria-atomic="true" data-i18n="update_help">Check Axon's signed release channel.</small></div><button id="update-button" class="secondary" aria-describedby="update-status" data-i18n="check_update">Check</button></div>
+          <div id="apt-update-help" class="hidden">
+            <p data-i18n="update_apt_prerequisite">Updates require the Pulse APT repository. If you installed a downloaded .deb, set up the repository once below.</p>
+            <details>
+              <summary data-i18n="update_apt_setup">Set up the Pulse update repository</summary>
+              <pre><code>curl -fsSLO https://dist.taurinetech.com/pulse/apt/install-apt.sh &amp;&amp;
+sh install-apt.sh</code></pre>
+              <p data-i18n="update_apt_channel">This selects Stable. For Beta or Alpha, add --channel beta or --channel alpha to the sh command.</p>
+            </details>
+            <p data-i18n="update_apt_help">Once the repository is configured, use Ubuntu Software Updater or run:</p>
+            <pre><code>sudo apt update
+sudo apt install --only-upgrade axon-pulse-desktop</code></pre>
+            <p data-i18n="update_apt_restart">After an upgrade the background service restarts itself. If this window is open on the older build, it offers Restart Pulse; closed windows relaunch on their own.</p>
+          </div>
+          <div class="setting privacy"><div><strong data-i18n="what_sent">What Pulse sends</strong><small data-i18n="what_sent_help">Aggregated network timings, reachability, speed results, device OS/version, and optional Wi-Fi signal details. Never browsing content, packet captures, or VPN access.</small></div></div>
+          <div class="setting"><div><strong>Support bundle</strong><small>A bounded local JSON file with redacted state, counters, and error categories. Inspect it before sharing.</small></div><button id="support-button" class="secondary">Export</button></div>
+          <div class="setting danger"><div><strong data-i18n="disconnect">Disconnect this sensor</strong><small data-i18n="disconnect_help">Removes its local claim. Existing controller history is retained.</small></div><button id="disconnect-button" class="danger-button" data-i18n="disconnect">Disconnect</button></div>
+        </div>
+        <p class="version">Axon Pulse <span id="version">desktop</span> · <span data-i18n="background_note">The measurement service keeps running when this window is closed.</span></p>
+      </section>
+    </main>
+
+    <dialog id="onboarding" class="modal-backdrop" aria-labelledby="welcome-title">
+      <div class="modal">
+        <div class="modal-logo brand-mark" aria-hidden="true"><img src="logo-mark.svg" alt="" /></div>
+        <p class="eyebrow" data-i18n="welcome">Welcome to Axon Pulse</p>
+        <h1 id="welcome-title" data-i18n="quietly">Know when your connection lets you down.</h1>
+        <p data-i18n="privacy_intro">Pulse measures connection quality in the background. It does not inspect browsing content, capture traffic, or join your organisation's private network.</p>
+        <ul><li data-i18n="privacy_one">Latency, loss, DNS and reachability summaries</li><li data-i18n="privacy_two">Occasional scheduled speed tests within a data budget</li><li>Local mode never uploads measurement data</li></ul>
+        <button id="use-local" class="primary" type="button">Use Pulse locally</button>
+        <div class="choice-divider"><span>or connect to your provider</span></div>
+        <form id="claim-form" class="claim-fields">
+          <label><span data-i18n="controller_url">Controller URL</span><input id="claim-url" type="url" autocomplete="url" placeholder="https://axon.example.com" required /></label>
+          <label><span data-i18n="claim_token">Single-use claim token</span><input id="claim-token" type="password" autocomplete="one-time-code" placeholder="spt_…" required /></label>
+          <p id="claim-error" class="form-error" role="alert"></p>
+          <button id="claim-button" class="secondary wide" type="submit" data-i18n="connect">Connect securely</button>
+          <small data-i18n="token_note">The token is exchanged once and never stored after pairing. Connecting shares this device's name, OS, and app version with your provider.</small>
+        </form>
+        <button id="onboarding-close" class="secondary wide hidden" type="button">Not now — keep current mode</button>
+      </div>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>

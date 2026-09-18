@@ -1,0 +1,10 @@
+Package: axon-pulse-desktop
+Version: __VERSION__
+Section: net
+Priority: optional
+Architecture: __ARCH__
+Maintainer: Taurine Technology <support@taurine.io>
+Depends: apparmor, libgtk-4-1, libwebkitgtk-6.0-4
+Installed-Size: 25600
+Description: Axon Pulse desktop network-quality sensor
+ Native tray, four-screen GUI, and user-owned background measurement service.

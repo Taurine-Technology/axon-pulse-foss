@@ -1,0 +1,13 @@
+# Every text file is stored and checked out with LF line endings on every
+# platform. The shell installers and templates under packaging/ are executed
+# on Linux and embedded by tools/release-index, so a CRLF checkout on Windows
+# would change their bytes and break both the tests and the shipped scripts.
+* text=auto eol=lf
+
+# Binary assets are never normalised.
+*.woff2 binary
+*.png binary
+*.icns binary
+
+# Unified diffs legitimately contain lines that look like whitespace errors.
+*.patch -whitespace

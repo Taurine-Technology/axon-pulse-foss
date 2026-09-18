@@ -1,0 +1,9 @@
+Package: axon-pulse
+Version: __VERSION__
+Section: net
+Priority: optional
+Architecture: __ARCH__
+Maintainer: Taurine Technology <support@taurine.io>
+Installed-Size: 20480
+Description: Axon Pulse headless network-quality sensor
+ Pure-Go service and CLI with no desktop or webview dependencies.

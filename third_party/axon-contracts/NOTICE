@@ -1,0 +1,5 @@
+Axon Go contracts and shared runtime packages
+Copyright 2026 Taurine Technology (Pty) Ltd.
+
+The gen/go Go module is licensed under the Apache License, Version 2.0.
+The repository root and Python package retain their separately stated license.

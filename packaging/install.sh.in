@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Generated headless bootstrap. The shared APT installer is embedded so there
+# is no second mutable script download. Keep all actions inside main so a
+# truncated download cannot execute a partially received installer function.
+@APT_INSTALLER@
+main --package headless "$@"

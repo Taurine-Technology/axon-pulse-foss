@@ -1,0 +1,29 @@
+[Unit]
+Description=Axon Pulse network quality sensor
+Documentation=https://github.com/Taurine-Technology/axon-pulse-foss
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/axon-pulse run
+Restart=always
+RestartSec=5
+StateDirectory=axon-pulse
+RuntimeDirectory=axon-pulse
+UMask=0077
+NoNewPrivileges=true
+CapabilityBoundingSet=CAP_NET_RAW
+AmbientCapabilities=CAP_NET_RAW
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=true
+MemoryDenyWriteExecute=true
+
+[Install]
+WantedBy=multi-user.target

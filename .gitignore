@@ -1,0 +1,7 @@
+/bin/
+/dist/
+/tools/bin/
+desktop/desktop
+.wrangler/
+
+__pycache__/

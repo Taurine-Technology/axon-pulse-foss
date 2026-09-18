@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Axon Pulse
+Exec=axon-pulse-desktop
+Terminal=false
+X-GNOME-Autostart-enabled=true
+NoDisplay=true
